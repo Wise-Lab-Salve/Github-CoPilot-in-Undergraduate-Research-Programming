@@ -1,9 +1,16 @@
 # Load package
 
-if (!requireNamespace("shinysurveys", quietly = TRUE)) {
-  install.packages("shinysurveys")
+if (!requireNamespace("shiny", quietly = TRUE)) {
+  install.packages("shiny")
 }
-devtools::install_github("jdtrat/shinysurveys")
+
+if (!requireNamespace("shinysurveys", quietly = TRUE)) {
+  if (!requireNamespace("devtools", quietly = TRUE)) {
+    install.packages("devtools")  # Install devtools if not already installed
+  }
+  devtools::install_github("jdtrat/shinysurveys")
+}
+
 if (!requireNamespace("dplyr", quietly = TRUE)) {
   install.packages("dplyr")
 }
@@ -12,12 +19,6 @@ if (!requireNamespace("shinyapp", quietly = TRUE)) {
 }
 if (!requireNamespace("Microsoft365R", quietly = TRUE)) {
   install.packages("Microsoft365R")
-}
-if (!requireNamespace("shinysurveys", quietly = TRUE)) {
-  if (!requireNamespace("devtools", quietly = TRUE)) {
-    install.packages("devtools")  # Install devtools if not already installed
-  }
-  devtools::install_github("jdtrat/shinysurveys")
 }
 
 # Load package
