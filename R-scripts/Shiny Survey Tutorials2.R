@@ -180,8 +180,5 @@ server <- function(input, output, session) {
 }
 
 # 6. Run survey
-run_survey <- function() {
-  shiny::runApp(
-    list(ui = uii, server = server)
-  )
+shiny::shinyApp(ui = uii, server = server)
 }
