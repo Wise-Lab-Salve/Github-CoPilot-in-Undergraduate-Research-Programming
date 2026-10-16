@@ -1,43 +1,24 @@
-
-# Install packages if needed
-
-if (!requireNamespace("shiny", quietly = TRUE)) {
-  install.packages("shiny")
-}
-
+## Install packages if needed
+if (!requireNamespace("shiny", quietly = TRUE)) install.packages("shiny")
 if (!requireNamespace("shinysurveys", quietly = TRUE)) {
-  if (!requireNamespace("devtools", quietly = TRUE)) {
-    install.packages("devtools")
-  }
+  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
   devtools::install_github("jdtrat/shinysurveys")
 }
+if (!requireNamespace("dplyr", quietly = TRUE)) install.packages("dplyr")
+if (!requireNamespace("Microsoft365R", quietly = TRUE)) install.packages("Microsoft365R")
+if (!requireNamespace("uuid", quietly = TRUE)) install.packages("uuid")
+if (!requireNamespace("shinyjs", quietly = TRUE)) install.packages("shinyjs") # <-- ADDED FOR CLOSING TABS
 
-if (!requireNamespace("dplyr", quietly = TRUE)) {
-  install.packages("dplyr")
-}
-
-if (!requireNamespace("Microsoft365R", quietly = TRUE)) {
-  install.packages("Microsoft365R")
-}
-
-if (!requireNamespace("uuid", quietly = TRUE)) {
-  install.packages("uuid")
-}
-
-
-# 2. Load packages
-
+##  Load packages
 library(shiny)
 library(shinysurveys)
 library(dplyr)
 library(Microsoft365R)
 library(uuid)
+library(shinyjs) # <-- ADDED
 
-
-# 3. Create survey questions
-
+##  Create survey questions
 df_currentgraphic <- data.frame(
-  
   question = c(
     "For your current visualization did you ask CoPilot to give you new color suggestions?",
     "For your current visualization did you ask CoPilot to give you new color suggestions?",
@@ -81,7 +62,6 @@ df_currentgraphic <- data.frame(
     "Will you use any of this code again?",
     "Will you use any of this code again?"
   ),
-  
   option = c(
     "Yes", "No", "Yes", "No", "Yes", "No",
     "Yes", "No", "Yes", "No", "Yes", "No",
@@ -92,13 +72,11 @@ df_currentgraphic <- data.frame(
     "I learned how to move the legend",
     "Yes", "No", "Yes", "No"
   ),
-  
   input_type = c(
     rep("y/n", 36),
     "text",
     rep("y/n", 4)
   ),
-  
   input_id = c(
     "color_plot", "color_plot",
     "colorblind_plot", "colorblind_plot",
@@ -122,17 +100,14 @@ df_currentgraphic <- data.frame(
     "display_data", "display_data",
     "use_again", "use_again"
   ),
-  
   dependence = rep(NA, 41),
   dependence_value = rep(NA, 41),
   required = rep(FALSE, 41)
 )
 
-
-
-# 4. Create survey UI
-
+## Create survey UI
 uii <- shiny::fluidPage(
+  shinyjs::useShinyjs(), # <-- REQUIRED TO ENABLE JAVASCRIPT CLOSING CAPABILITIES
   
   shinysurveys::surveyOutput(
     df = df_currentgraphic,
@@ -144,37 +119,33 @@ uii <- shiny::fluidPage(
   )
 )
 
-
-# 5. Server
-
+##  Server
 server <- function(input, output, session) {
   
-  # Generate a unique anonymous subject ID
+  ## Generate a unique anonymous subject ID
   subject_id <- uuid::UUIDgenerate()
   
-  # Render survey
+  ## Render survey
   renderSurvey()
-  observeEvent(input$submit, {
+  
+  ## FIXED: Replaced observeEvent(input$submit) with native shinysurveys tracking
+  shinysurveys::observe_submit({
     response_data <- getSurveyData()
     response_data$subject_id <- subject_id
     
-    # Save responses to Microsoft 365
+    ## Save responses to Microsoft 365
     tryCatch({
       team <- get_team("Wise Lab Team")
       drv <- team$get_drive()
       general_folder <- drv$get_item("General")
       ai_github_folder <- general_folder$get_item("AI GitHub")
       
-      # Load existing survey data
-      rds_file <- ai_github_folder$get_item(
-        "spring2024survey.rds"
-      )
+      ## Load existing survey data
+      rds_file <- ai_github_folder$get_item("spring2024survey.rds")
       
       dataoutput <- rds_file$load_rds()
-      dataout2 <- dplyr::bind_rows(
-        dataoutput,
-        response_data
-      )
+      dataout2 <- dplyr::bind_rows(dataoutput, response_data)
+      
       ai_github_folder$save_rds(
         object = dataout2,
         file = "spring2024survey.rds"
@@ -182,7 +153,7 @@ server <- function(input, output, session) {
   
       print(response_data)
       
-      # Show completion message after saving succeeds
+      ## Show completion message after saving succeeds
       showModal(
         modalDialog(
           title = "Survey Submitted Successfully!",
@@ -191,17 +162,13 @@ server <- function(input, output, session) {
             "Please continue to the Improving Computational",
             "Time Using Copilot Survey."
           ),
-          footer = actionButton(
-            "complete_survey",
-            "Complete"
-          ),
+          footer = actionButton("complete_survey", "Complete"),
           easyClose = FALSE
         )
       )
       
     }, error = function(e) {
-      
-      # Display an error if saving fails
+      ## Display an error if saving fails
       showModal(
         modalDialog(
           title = "Submission Error",
@@ -214,35 +181,24 @@ server <- function(input, output, session) {
           easyClose = FALSE
         )
       )
-      
     })
-    
-  }, once = TRUE)
+  })
   
-  
-  # Stop the Shiny app when Complete is clicked
+  ## Stop the Shiny app and push JavaScript window closure command
   observeEvent(input$complete_survey, {
-    
     message("Complete button clicked!")
     
-    stopApp()
+    ## FIXED: Send inline JS command to shut down the client browser tab
+    shinyjs::runjs("window.close();") 
     
+    stopApp()
   }, once = TRUE)
-  
 }
 
-
-
-# 6. Run survey
-
-
+## Run survey
 run_survey <- function() {
-  
   shiny::runApp(
-    list(
-      ui = uii,
-      server = server
-    )
+    list(ui = uii, server = server)
   )
-  
 }
+
