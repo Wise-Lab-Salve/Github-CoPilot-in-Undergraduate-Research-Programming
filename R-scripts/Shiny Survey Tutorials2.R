@@ -124,6 +124,11 @@ df_currentgraphic <- data.frame(
 
 # Survey UI
 uii <- shiny::fluidPage(
+    tags$script(HTML("
+    Shiny.addCustomMessageHandler('closeBrowser', function(message) {
+      window.close();
+    });
+  ")),
   shinysurveys::surveyOutput(
     df = df_currentgraphic,
     survey_title = "Improving a Current Plot Using CoPilot",
@@ -219,8 +224,9 @@ server <- function(input, output, session) {
   
   # Stop the Shiny app after completion
   observeEvent(input$complete_survey, {
-    stopApp()
-  }, once = TRUE)
+  session$sendCustomMessage("closeBrowser", list())
+  stopApp()
+}, once = TRUE)
 }
 
 
