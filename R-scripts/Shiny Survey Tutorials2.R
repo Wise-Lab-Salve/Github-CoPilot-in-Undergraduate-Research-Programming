@@ -1,8 +1,5 @@
 
 # Install packages if needed
-if (!requireNamespace("shiny", quietly = TRUE)) {
-  install.packages("shiny")
-}
 
 if (!requireNamespace("shinysurveys", quietly = TRUE)) {
   if (!requireNamespace("devtools", quietly = TRUE)) {
