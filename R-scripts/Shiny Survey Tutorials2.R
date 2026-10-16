@@ -1,4 +1,4 @@
-# 1. Install missing packages
+# 1. Install missing packages if they aren't present
 if (!requireNamespace("shiny", quietly = TRUE)) { install.packages("shiny") }
 if (!requireNamespace("shinysurveys", quietly = TRUE)) {
   if (!requireNamespace("devtools", quietly = TRUE)) { install.packages("devtools") }
@@ -72,11 +72,11 @@ df_currentgraphic <- data.frame(
     "Yes", "No", "Yes", "No"
   ),
   
-  # FIX 1: Changed "y/n" to "radio" as shinysurveys natively understands "radio"
+  # FIXED: Set multiple choice components to "mc" to satisfy {shinysurveys} validations
   input_type = c(
-    rep("radio", 36),
+    rep("mc", 36),
     "text",
-    rep("radio", 4)
+    rep("mc", 4)
   ),
   
   input_id = c(
@@ -123,7 +123,7 @@ server <- function(input, output, session) {
   # Generate a unique anonymous subject ID
   subject_id <- uuid::UUIDgenerate()
   
-  # FIX 2: Corrected renderSurvey alignment inside the server environment
+  # Correctly render the shinysurveys environment
   shinysurveys::renderSurvey()
   
   observeEvent(input$submit, {
@@ -147,7 +147,7 @@ server <- function(input, output, session) {
         object = dataout2,
         file = "spring2024survey.rds"
       )
-      
+  
       print(response_data)
       
       # Show completion message after saving succeeds
@@ -179,6 +179,5 @@ server <- function(input, output, session) {
   }, once = TRUE)
 }
 
-# 6. Run survey
+# 6. Run survey directly
 shiny::shinyApp(ui = uii, server = server)
-}
