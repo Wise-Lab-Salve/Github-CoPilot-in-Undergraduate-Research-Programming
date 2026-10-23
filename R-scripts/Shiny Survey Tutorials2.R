@@ -127,11 +127,13 @@ server <- function(input, output, session) {
   shinysurveys::renderSurvey()
   
   observeEvent(input$submit, {
-    response_data <- shinysurveys::getSurveyData()
-    response_data$subject_id <- subject_id
     
-    # Save responses to Microsoft 365
     tryCatch({
+      # Collect the responses (now protected by tryCatch)
+      response_data <- shinysurveys::getSurveyData()
+      response_data$subject_id <- subject_id
+      
+      # Save responses to Microsoft 365
       team <- get_team("Wise Lab Team")
       drv <- team$get_drive()
       general_folder <- drv$get_item("General")
@@ -147,7 +149,7 @@ server <- function(input, output, session) {
         object = dataout2,
         file = "spring2024survey.rds"
       )
-  
+      
       print(response_data)
       
       # Show completion message after saving succeeds
@@ -161,7 +163,7 @@ server <- function(input, output, session) {
       )
       
     }, error = function(e) {
-      # Display an error if saving fails
+      # Display an error if collecting or saving fails
       showModal(
         modalDialog(
           title = "Submission Error",
@@ -172,10 +174,11 @@ server <- function(input, output, session) {
     })
   }, once = TRUE)
   
-  # Stop the Shiny app when Complete is clicked
+  # Close the session when Complete is clicked
   observeEvent(input$complete_survey, {
     message("Complete button clicked!")
-    stopApp()
+    removeModal()
+    session$close()
   }, once = TRUE)
 }
 
