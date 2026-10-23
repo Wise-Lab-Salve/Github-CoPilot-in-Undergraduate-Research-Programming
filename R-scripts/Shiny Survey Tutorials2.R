@@ -72,7 +72,6 @@ df_currentgraphic <- data.frame(
     "Yes", "No", "Yes", "No"
   ),
   
-  # FIXED: Set multiple choice components to "mc" to satisfy {shinysurveys} validations
   input_type = c(
     rep("mc", 36),
     "text",
@@ -123,13 +122,11 @@ server <- function(input, output, session) {
   # Generate a unique anonymous subject ID
   subject_id <- uuid::UUIDgenerate()
   
-  # Correctly render the shinysurveys environment
   shinysurveys::renderSurvey()
   
   observeEvent(input$submit, {
     
     tryCatch({
-      # Collect the responses (now protected by tryCatch)
       response_data <- shinysurveys::getSurveyData()
       response_data$subject_id <- subject_id
       
@@ -149,7 +146,7 @@ server <- function(input, output, session) {
         object = dataout2,
         file = "spring2024survey.rds"
       )
-      
+  
       print(response_data)
       
       # Show completion message after saving succeeds
@@ -184,3 +181,4 @@ server <- function(input, output, session) {
 
 # 6. Run survey directly
 shiny::shinyApp(ui = uii, server = server)
+
