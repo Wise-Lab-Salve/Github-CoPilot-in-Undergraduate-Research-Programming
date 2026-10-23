@@ -1,4 +1,4 @@
-# 1. Install missing packages if they aren't present
+    # 1. Install missing packages if they aren't present
 if (!requireNamespace("shiny", quietly = TRUE)) { install.packages("shiny") }
 if (!requireNamespace("shinysurveys", quietly = TRUE)) {
   if (!requireNamespace("devtools", quietly = TRUE)) { install.packages("devtools") }
@@ -68,10 +68,11 @@ df_currentgraphic <- data.frame(
     "Yes", "No", "Yes", "No", "Yes", "No",
     "Yes", "No", "Yes", "No", "Yes", "No",
     "Yes", "No", "Yes", "No", "Yes", "No",
-    "I learned how to move the legend",
+    "Type your answer here",
     "Yes", "No", "Yes", "No"
   ),
   
+  # FIXED: Set multiple choice components to "mc" to satisfy {shinysurveys} validations
   input_type = c(
     rep("mc", 36),
     "text",
@@ -109,6 +110,7 @@ df_currentgraphic <- data.frame(
 
 # 4. Create survey UI
 uii <- shiny::fluidPage(
+  shiny::textOutput("subject_id_display"),
   shinysurveys::surveyOutput(
     df = df_currentgraphic,
     survey_title = "Improving a Current Plot Using CoPilot",
@@ -122,45 +124,67 @@ server <- function(input, output, session) {
   # Generate a unique anonymous subject ID
   subject_id <- uuid::UUIDgenerate()
   
+  # Display the participant ID at the top of the survey
+  output$subject_id_display <- shiny::renderText(paste("Your participant ID:", subject_id))
+  
+  # Correctly render the shinysurveys environment
   shinysurveys::renderSurvey()
   
   observeEvent(input$submit, {
     
     tryCatch({
+      # Collect the responses (now protected by tryCatch)
       response_data <- shinysurveys::getSurveyData()
       response_data$subject_id <- subject_id
       
-      # Save responses to Microsoft 365
-      team <- get_team("Wise Lab Team")
-      drv <- team$get_drive()
-      general_folder <- drv$get_item("General")
-      ai_github_folder <- general_folder$get_item("AI GitHub")
-      
-      # Load existing survey data
-      rds_file <- ai_github_folder$get_item("spring2024survey.rds")
-      
-      dataoutput <- rds_file$load_rds()
-      dataout2 <- dplyr::bind_rows(dataoutput, response_data)
-      
-      ai_github_folder$save_rds(
-        object = dataout2,
-        file = "spring2024survey.rds"
-      )
-  
-      print(response_data)
-      
-      # Show completion message after saving succeeds
-      showModal(
-        modalDialog(
-          title = "Survey Submitted Successfully!",
-          "Thank you for completing the second lab survey. Please continue to the Improving Computational Time Using Copilot Survey.",
-          footer = actionButton("complete_survey", "Complete"),
-          easyClose = FALSE
+      # Save responses to Microsoft 365 (protected by its own tryCatch)
+      saved <- tryCatch({
+        team <- get_team("Wise Lab Team")
+        drv <- team$get_drive()
+        general_folder <- drv$get_item("General")
+        ai_github_folder <- general_folder$get_item("AI GitHub")
+        
+        # Load existing survey data
+        rds_file <- ai_github_folder$get_item("spring2024survey.rds")
+        
+        dataoutput <- rds_file$load_rds()
+        dataoutput$subject_id <- as.character(dataoutput$subject_id)
+        dataout2 <- dplyr::bind_rows(dataoutput, response_data)
+        
+        ai_github_folder$save_rds(
+          object = dataout2,
+          file = "spring2024survey.rds"
         )
-      )
+        
+        print(response_data)
+        TRUE   # saving worked
+      }, error = function(e) {
+        message("Save error: ", conditionMessage(e))   # shows in the R console
+        showModal(
+          modalDialog(
+            title = "Save Error",
+            paste("Your responses could not be saved to Microsoft 365. Please contact the researcher. Error:", conditionMessage(e)),
+            easyClose = FALSE
+          )
+        )
+        FALSE  # saving failed
+      })
+      
+      # Show completion message only if saving succeeded
+      if (isTRUE(saved)) {
+        showModal(
+          modalDialog(
+            title = "Survey Submitted Successfully!",
+            "Thank you for completing the second lab survey. Please continue to the Improving Computational Time Using Copilot Survey.",
+            footer = actionButton("complete_survey", "Complete"),
+            easyClose = FALSE
+          )
+        )
+      }
       
     }, error = function(e) {
-      # Display an error if collecting or saving fails
+      # Display an error if collecting the responses fails
+      message("Submit error: ", conditionMessage(e))
       showModal(
         modalDialog(
           title = "Submission Error",
@@ -181,4 +205,3 @@ server <- function(input, output, session) {
 
 # 6. Run survey directly
 shiny::shinyApp(ui = uii, server = server)
-
