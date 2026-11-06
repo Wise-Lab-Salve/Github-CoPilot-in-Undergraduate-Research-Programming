@@ -39,7 +39,6 @@ df_currentgraphic <- data.frame(question = c("What is your participant ID?","For
                                 dependence_value = rep(NA, 42),
                                 required = rep(F, 42))
 uii <- shiny::fluidPage(
-    textOutput("subject_id_display"),
   shinysurveys::surveyOutput(df = df_currentgraphic,
                              survey_title = "Improving a Current Plot Using CoPilot",
                              survey_description = "Move on to the next section of the website to follow the current visualization tutorial"),
@@ -52,10 +51,6 @@ uii <- shiny::fluidPage(
 )
 
 server <- function(input, output, session) {
-  subject_id <- sample(1:1e3, 1)
-   output$subject_id_display <- shiny::renderText(
-    paste("Your participant ID:", subject_id)
-  )
   renderSurvey()
    set_progress <- function(value, title) {
     updateProgressBar(session = session, id = "progress",
@@ -88,11 +83,13 @@ server <- function(input, output, session) {
       "Please Continue by taking the Improving Computational Time Using Copilot Survey.",
       footer = actionButton("complete_survey", "Complete")
   ))
+    })
         # Close the app when the "Complete" button is clicked 
   observeEvent(input$complete_survey, { 
     stopApp() # Stops the Shiny app 
   })
 }
+               
         
 
 # Run the Shiny app
