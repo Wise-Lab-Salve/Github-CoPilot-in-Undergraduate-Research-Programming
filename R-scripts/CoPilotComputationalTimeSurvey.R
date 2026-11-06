@@ -38,7 +38,6 @@ df_time <- data.frame(question = c("What is your participant ID?","Were you succ
                       dependence_value = rep(NA, 13),
                       required = rep(F, 13))
 uiii <- shiny::fluidPage(
-   textOutput("subject_id_display"),
   shinysurveys::surveyOutput(df = df_time,
                              survey_title = "Improving Computational Time Using Copilot",
                              survey_description = "To determine if Copilot can help improve the computational time for your code,  you will use the function system.time in R. To use this command, insert your code as follows: system.time({your code}). Don't forget the brackets!"),
@@ -50,10 +49,6 @@ uiii <- shiny::fluidPage(
   )
 )
 server <- function(input, output, session) {
-  subject_id <- sample(1:1e3, 1)
-   output$subject_id_display <- shiny::renderText(
-    paste("Your participant ID:", subject_id)
-  )
   renderSurvey()
   set_progress <- function(value, title) {
     updateProgressBar(session = session, id = "progress",
